@@ -1,0 +1,9 @@
+# Frequency binning for SDC3a
+# Each row contains:
+# Min freq [MHz]     Max freq [MHz]
+     106     121
+     121     136
+     136     151
+     151     166
+     166     181
+     181     196
