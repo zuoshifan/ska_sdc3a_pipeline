@@ -4,10 +4,16 @@ Run the pipeline as follows:
 
     $ python pipe.py
 
+Run pipeline for the Test Dataset as follows:
+
+    $ python test_pipe.py
+
 TODO:
 
 1. Try various foreground subtraction method;
 
 2. Check unit conversion;
 
-3. Power spectrum error estimation.
+3. Power spectrum error estimation;
+
+4. PSF deconvolution.
