@@ -241,6 +241,7 @@ def power_spectrum_2d(input_array, kbins=10, binning='log', box_dims=244/.7, ret
 
     kp, kz, power = kp.flatten(), kz.flatten(), power.flatten()
     ps = stats.binned_statistic_2d(x=kp, y=kz, values=power, statistic='mean', bins=[kper, kpar])
+    err = stats.binned_statistic_2d(x=kp, y=kz, values=power, statistic='std', bins=[kper, kpar])
 
     if binning=='log':
         kper_mid = np.power(10, 0.5*(kper[:-1]+kper[1:]))
@@ -251,9 +252,9 @@ def power_spectrum_2d(input_array, kbins=10, binning='log', box_dims=244/.7, ret
 
     if return_modes:
         n_modes = stats.binned_statistic_2d(x=kp, y=kz, values=None, statistic='count', bins=[kper, kpar])
-        return ps.statistic, kper_mid, kpar_mid, n_modes.statistic
+        return ps.statistic, err.statistic, kper_mid, kpar_mid, n_modes.statistic
     else:
-        return ps.statistic, kper_mid, kpar_mid
+        return ps.statistic, err.statistic, kper_mid, kpar_mid
 
 
 def cross_power_spectrum_1d(input_array1_nd, input_array2_nd, kbins=100, box_dims=None, return_n_modes=False, binning='log',breakpoint=0.1):

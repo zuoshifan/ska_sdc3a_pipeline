@@ -102,14 +102,12 @@ for fbi in range(nfb):
 
 
     R = Rs[fbi].transpose(1, 2, 0)
-    ps, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True)
+    ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True)
 
     # save ps to file
     fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz_{freq_bins[fbi][1]}MHz.data'
     np.savetxt(fl, ps.T, fmt='%.12f') # Note: transpose to make each row is of constant k_parallel
 
-    # TODO:
-    # to get 1sigma error of ps
+    # save 1sigma error to file
     fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz_{freq_bins[fbi][1]}MHz_errors.data'
-    error = np.zeros_like(ps)
-    np.savetxt(fl, error, fmt='%.12f')
+    np.savetxt(fl, err, fmt='%.12f')
