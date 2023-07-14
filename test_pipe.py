@@ -15,15 +15,20 @@ import matplotlib.pyplot as plt
 
 
 # read in image data
-filename = '/home/s1_tianlai/kfyu/SDC3/TestDataset/TestDataset.msw_image.fits'
+img_name = '/home/s1_tianlai/kfyu/SDC3/TestDataset/TestDataset.msw_image.fits'
 
-hdul = fits.open(filename)
+hdul = fits.open(img_name)
 print(hdul.info())
 # print(hdul[0].header)
 data = hdul[0].data
 print(data.shape, data.dtype)
 # crop to reserve only central 1024 x 1024
-data = data[:, 1024-512:1024+512, 1024-512:1024+512]
+# data = data[:, 1024-512:1024+512, 1024-512:1024+512]
+nfreq, x, y = data.shape
+
+# crop to reserve only central 16 arcsec * 900 / 3600 = 4 deg
+N = 900//2
+data = data[:, x//2-N:x//2+N, y//2-N:y//2+N]
 nfreq, nra, ndec = data.shape
 
 # read in necessary info from header
@@ -33,6 +38,18 @@ freq0i = hdul[0].header['CRPIX3']
 dfreq = hdul[0].header['CDELT3']
 freq = np.linspace(freq0, freq0 + dfreq * (nfreq - freq0i), nfreq) # Hz
 print(freq[0]*1.0e-6, freq[-1]*1.0e-6) # Mhz
+
+# Convert the image data from Jy/beam to K
+# the beam
+beam = Beam.from_fits_header(fits.getheader(img_name))
+# print(beam)
+image_data_K = (data * u.Jy).to(u.K, u.brightness_temperature(freq[:, np.newaxis, np.newaxis]*u.Hz, beam))
+
+data = image_data_K.value
+
+# subtract mean of data
+# data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
+
 
 # # foreground subtraction
 # # PCA method
@@ -52,15 +69,6 @@ print(freq[0]*1.0e-6, freq[-1]*1.0e-6) # Mhz
 
 # no foreground in TestDataset
 R = data
-
-# # Convert the image data from Jy/beam to K
-# the beam
-beam = Beam.from_fits_header(fits.getheader(filename))
-# print(beam)
-image_data_K = (R * u.Jy).to(u.K, u.brightness_temperature(freq[:, np.newaxis, np.newaxis]*u.Hz, beam))
-
-R = image_data_K.value
-# print(data)
 
 
 # unit conversion
@@ -91,7 +99,9 @@ for fbi in range(nfb):
 
     freq = freqs[fbi]
 
-    nu0 = freq[len(freq)//2] # central frequency
+    # nu0 = freq[len(freq)//2] # central frequency, score 102.89465978280825
+    # nu0 = freq[0] # start frequency, score: 102.73098598499035
+    nu0 = freq[-1] # end frequency, score: 103.7738630225836
     nu_HI = 1420.406 # MHz
     z = 1.0e6 * nu_HI / nu0 - 1
     print(z)

@@ -13,15 +13,18 @@ import matplotlib.pyplot as plt
 
 
 # read in image data
-filename = '/home/s1_tianlai/SKA/SDC3/ZW3.msw_image.fits'
+img_name = '/home/s1_tianlai/SKA/SDC3/ZW3.msw_image.fits'
 
-hdul = fits.open(filename)
+hdul = fits.open(img_name)
 print(hdul.info())
 # print(hdul[0].header)
 data = hdul[0].data
 print(data.shape, data.dtype)
-# crop to reserve only central 1024 x 1024
-data = data[:, 1024-512:1024+512, 1024-512:1024+512]
+nfreq, x, y = data.shape
+
+# crop to reserve only central 16 arcsec * 900 / 3600 = 4 deg
+N = 900//2
+data = data[:, x//2-N:x//2+N, y//2-N:y//2+N]
 nfreq, nra, ndec = data.shape
 
 # read in necessary info from header
@@ -31,6 +34,33 @@ freq0i = hdul[0].header['CRPIX3']
 dfreq = hdul[0].header['CDELT3']
 freq = np.linspace(freq0, freq0 + dfreq * (nfreq - freq0i), nfreq) # Hz
 print(freq[0]*1.0e-6, freq[-1]*1.0e-6) # Mhz
+
+
+# read in station beam
+beam_name = '/home/s1_tianlai/SKA/SDC3/station_beam.fits'
+
+hdul = fits.open(beam_name)
+print(hdul.info())
+# print(hdul[0].header)
+beam = hdul[0].data
+print(beam.shape, beam.dtype)
+nfreq, bx, by = beam.shape
+beam = beam[:, bx//2-N:bx//2+N, by//2-N:by//2+N]
+print(beam.shape, beam.min(), beam.max())
+
+# correct station beam
+data /= beam
+
+# Convert the image data from Jy/beam to K
+# the beam
+beam = Beam.from_fits_header(fits.getheader(img_name))
+# print(beam)
+image_data_K = (data * u.Jy).to(u.K, u.brightness_temperature(freq[:, np.newaxis, np.newaxis]*u.Hz, beam))
+
+data = image_data_K.value
+
+# subtract mean of data
+data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
 
 
 # foreground subtraction
@@ -46,17 +76,8 @@ s[-nmode:] = 1.0
 F = np.dot(np.dot(U*s, U.T), D)
 F = F.reshape((nfreq, nra, ndec))
 R = data - F # residual 21 cm signal + noise
-R = R.reshape((nfreq, nra, ndec))
-
-
-# # Convert the image data from Jy/beam to K
-# the beam
-beam = Beam.from_fits_header(fits.getheader(filename))
-# print(beam)
-image_data_K = (R * u.Jy).to(u.K, u.brightness_temperature(freq[:, np.newaxis, np.newaxis]*u.Hz, beam))
-
-R = image_data_K.value
-# print(data)
+# R = R.reshape((nfreq, nra, ndec))
+# print(np.min(data), np.max(data), np.min(F), np.max(F), np.min(R), np.max(R))
 
 
 # unit conversion
