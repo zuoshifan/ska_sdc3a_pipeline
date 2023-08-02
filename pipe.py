@@ -45,11 +45,14 @@ print(hdul.info())
 beam = hdul[0].data
 print(beam.shape, beam.dtype)
 nfreq, bx, by = beam.shape
-beam = beam[:, bx//2-N:bx//2+N, by//2-N:by//2+N]
-print(beam.shape, beam.min(), beam.max())
+# beam = beam[:, bx//2-N:bx//2+N, by//2-N:by//2+N]
+# print(beam.shape, beam.min(), beam.max())
 
-# correct station beam
-data /= beam
+# # correct station beam
+# data /= beam
+
+# correct for common station beam (the lowest freq beam)
+data /= beam[0, bx//2-N:bx//2+N, by//2-N:by//2+N][np.newaxis, :, :]
 
 # Convert the image data from Jy/beam to K
 # the beam
@@ -77,7 +80,6 @@ F = np.dot(np.dot(U*s, U.T), D)
 F = F.reshape((nfreq, nra, ndec))
 R = data - F # residual 21 cm signal + noise
 # R = R.reshape((nfreq, nra, ndec))
-# print(np.min(data), np.max(data), np.min(F), np.max(F), np.min(R), np.max(R))
 
 
 # unit conversion
