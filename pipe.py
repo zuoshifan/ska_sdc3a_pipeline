@@ -35,65 +35,13 @@ dfreq = hdul[0].header['CDELT3']
 freq = np.linspace(freq0, freq0 + dfreq * (nfreq - freq0i), nfreq) # Hz
 print(freq[0]*1.0e-6, freq[-1]*1.0e-6) # Mhz
 
-
-# read in station beam
-beam_name = '/home/s1_tianlai/SKA/SDC3/station_beam.fits'
-
-hdul = fits.open(beam_name)
-print(hdul.info())
-# print(hdul[0].header)
-beam = hdul[0].data
-print(beam.shape, beam.dtype)
-nfreq, bx, by = beam.shape
-# beam = beam[:, bx//2-N:bx//2+N, by//2-N:by//2+N]
-# print(beam.shape, beam.min(), beam.max())
-
-# # correct station beam
-# data /= beam
-
-# correct for common station beam (the lowest freq beam)
-data /= beam[0, bx//2-N:bx//2+N, by//2-N:by//2+N][np.newaxis, :, :]
-
-# Convert the image data from Jy/beam to K
-# the beam
-beam = Beam.from_fits_header(fits.getheader(img_name))
-# print(beam)
-image_data_K = (data * u.Jy).to(u.K, u.brightness_temperature(freq[:, np.newaxis, np.newaxis]*u.Hz, beam))
-
-data = image_data_K.value
-
-# subtract mean of data
-data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
-
-
-# foreground subtraction
-# PCA method
-D = data.reshape(nfreq, -1)
-C = np.dot(D, D.T) / (nra * ndec)
-e, U = la.eigh(C)
-
-# 30 modes
-nmode = 30
-s = np.zeros_like(e)
-s[-nmode:] = 1.0
-F = np.dot(np.dot(U*s, U.T), D)
-F = F.reshape((nfreq, nra, ndec))
-R = data - F # residual 21 cm signal + noise
-# R = R.reshape((nfreq, nra, ndec))
-
-
-# unit conversion
-# convert (MHz, deg, deg) to comoving (Mpc, Mpc, Mpc)
-H0 = 100.0 # Hubble constant at z = 0, [km/sec/Mpc]
-Om0 = 0.30964 # Omega matter: density of non-relativistic matter in units of the critical density at z = 0
-cos = FlatLambdaCDM(H0, Om0)
-
-
 # frequency bin (6 bins)
 freq_bins = np.loadtxt('bins_frequency.txt').astype(int)
 nfb = freq_bins.shape[0] # number of frequency bins
-Rs = [ R[i*(nfreq//nfb):(i+1)*(nfreq//nfb)] for i in range(nfb-1) ] + [ R[(nfb-1)*(nfreq//nfb):] ]
-freqs = [ freq[i*(nfreq//nfb):(i+1)*(nfreq//nfb)] for i in range(nfb-1) ] + [ freq[(nfb-1)*(nfreq//nfb):] ]
+fi_bins = (nfreq//nfb) * np.arange(nfb+1)
+fi_bins[-1] += 1
+datas = [ data[fi_bins[i]:fi_bins[i+1]] for i in range(nfb) ]
+freqs = [ freq[fi_bins[i]:fi_bins[i+1]] for i in range(nfb) ]
 # print([ freq.shape for freq in freqs ])
 
 # k bins
@@ -104,13 +52,72 @@ kper = np.concatenate([[kper_mid[0] - 0.5*dkper], kper_mid + 0.5*dkper])
 dkpar = kpar_mid[1] - kpar_mid[0]
 kpar = np.concatenate([[kpar_mid[0] - 0.5*dkpar], kpar_mid + 0.5*dkpar])
 
+# read in station beam
+beam_name = '/home/s1_tianlai/SKA/SDC3/station_beam.fits'
 
-# compute 2d power spectrum for each frequency bin
-for fbi in range(nfb):
+hdul = fits.open(beam_name)
+print(hdul.info())
+# print(hdul[0].header)
+beam = hdul[0].data
+print(beam.shape, beam.dtype)
+nfreq, bx, by = beam.shape
+beam = beam[:, bx//2-N:bx//2+N, by//2-N:by//2+N]
+beams = [ beam[fi_bins[i]:fi_bins[i+1]] for i in range(nfb) ]
+# print([ beam.shape for beam in beams ])
+# print(beam.shape, beam.min(), beam.max())
 
-    freq = freqs[fbi]
+# # correct station beam
+# datas = [ data/beam for (data, beam) in zip(datas, beams) ]
 
-    nu0 = freq[len(freq)//2] # central frequency
+# correct for common station beam (the lowest freq beam)
+datas = [ data/beam[0:1, :, :] for (data, beam) in zip(datas, beams) ]
+
+# Cosmology model for unit conversion
+# convert (MHz, deg, deg) to comoving (Mpc, Mpc, Mpc)
+H0 = 100.0 # Hubble constant at z = 0, [km/sec/Mpc]
+Om0 = 0.30964 # Omega matter: density of non-relativistic matter in units of the critical density at z = 0
+cos = FlatLambdaCDM(H0, Om0)
+
+
+# for (fbi, data, freq) in zip(np.arange(nfb), datas, freqs):
+for (fbi, data, freq) in list(zip(np.arange(nfb), datas, freqs))[4:5]:
+
+    # Convert the image data from Jy/beam to K
+    # the beam
+    beam = Beam.from_fits_header(fits.getheader(img_name))
+    # print(beam)
+    image_data_K = (data * u.Jy).to(u.K, u.brightness_temperature(freq[:, np.newaxis, np.newaxis]*u.Hz, beam))
+
+    data = image_data_K.value
+
+    # subtract mean of data
+    data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
+
+
+    # foreground subtraction
+    # PCA method
+    D = data.reshape(data.shape[0], -1)
+    C = np.dot(D, D.T) / (nra * ndec)
+    e, U = la.eigh(C)
+
+    # # plot eigvals
+    # plt.figure()
+    # plt.semilogy(e[::-1], 'ro')
+    # plt.savefig(f'eigvals_freq_bin_{fbi}.png')
+    # plt.close()
+
+    # 10 modes
+    nmode = 10
+    s = np.zeros_like(e)
+    s[-nmode:] = 1.0
+    F = np.dot(np.dot(U*s, U.T), D)
+    F = F.reshape((F.shape[0], nra, ndec))
+    R = data - F # residual 21 cm signal + noise
+    print(R.min(), R.max())
+
+    # compute 2d power spectrum for each frequency bin
+    # nu0 = freq[len(freq)//2] # central frequency
+    nu0 = freq[-1] # end frequency
     nu_HI = 1420.406 # MHz
     z = 1.0e6 * nu_HI / nu0 - 1
     print(z)
@@ -120,7 +127,7 @@ for fbi in range(nfb):
     print(rx, ry, rz)
 
 
-    R = Rs[fbi].transpose(1, 2, 0)
+    R = R.transpose(1, 2, 0)
     ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True)
 
     # save ps to file
