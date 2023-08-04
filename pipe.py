@@ -1,10 +1,12 @@
 import numpy as np
 from scipy import linalg as la
-# import h5py
+import h5py
 from astropy.io import fits
 from astropy import units as u
 from astropy.cosmology import FlatLambdaCDM
 from radio_beam import Beam
+from pca_sub import pca
+from osvd_sub import osvd
 from power_spectrum import power_spectrum_2d
 
 import matplotlib
@@ -70,7 +72,7 @@ beams = [ beam[fi_bins[i]:fi_bins[i+1]] for i in range(nfb) ]
 # datas = [ data/beam for (data, beam) in zip(datas, beams) ]
 
 # correct for common station beam (the lowest freq beam)
-datas = [ data/beam[0:1, :, :] for (data, beam) in zip(datas, beams) ]
+# datas = [ data/beam[0:1, :, :] for (data, beam) in zip(datas, beams) ]
 
 # Cosmology model for unit conversion
 # convert (MHz, deg, deg) to comoving (Mpc, Mpc, Mpc)
@@ -96,24 +98,44 @@ for (fbi, data, freq) in list(zip(np.arange(nfb), datas, freqs))[4:5]:
 
     # foreground subtraction
     # PCA method
-    D = data.reshape(data.shape[0], -1)
-    C = np.dot(D, D.T) / (nra * ndec)
-    e, U = la.eigh(C)
-
-    # # plot eigvals
-    # plt.figure()
-    # plt.semilogy(e[::-1], 'ro')
-    # plt.savefig(f'eigvals_freq_bin_{fbi}.png')
-    # plt.close()
-
-    # 10 modes
-    nmode = 10
-    s = np.zeros_like(e)
-    s[-nmode:] = 1.0
-    F = np.dot(np.dot(U*s, U.T), D)
-    F = F.reshape((F.shape[0], nra, ndec))
-    R = data - F # residual 21 cm signal + noise
+    # 30 modes
+    nmode = 30
+    R = pca(data, nmode)
     print(R.min(), R.max())
+
+    # # OSVD method
+    # # 15000 modes
+    # nmode = 15000
+    # R = osvd(data, nmode)
+    # print(R.min(), R.max())
+
+    # with h5py.File('test_R.hdf5', 'r') as f:
+    #     R = f['R'][:]
+
+    # plot data slices
+    plt.figure(figsize=(13, 5))
+    plt.subplot(121)
+    plt.imshow(R[0], origin='lower', aspect='equal')
+    plt.colorbar()
+    plt.subplot(122)
+    plt.imshow(R[-1], origin='lower', aspect='equal')
+    plt.colorbar()
+    # plt.savefig(f'image_slice_fbi{fbi}_OSVD_{nmode}modes_no_beam_correction.png')
+    plt.savefig(f'image_slice_fbi{fbi}_PCA_{nmode}modes_no_beam_correction.png')
+    plt.close()
+
+    plt.figure(figsize=(13, 5))
+    plt.subplot(121)
+    plt.imshow(R[0]/beams[fbi][0, :, :], origin='lower', aspect='equal')
+    plt.colorbar()
+    plt.subplot(122)
+    plt.imshow(R[-1]/beams[fbi][-1, :, :], origin='lower', aspect='equal')
+    plt.colorbar()
+    # plt.savefig(f'image_slice_fbi{fbi}_OSVD_{nmode}modes_beam_correction.png')
+    plt.savefig(f'image_slice_fbi{fbi}_PCA_{nmode}modes_beam_correction.png')
+    plt.close()
+
+
 
     # compute 2d power spectrum for each frequency bin
     # nu0 = freq[len(freq)//2] # central frequency
