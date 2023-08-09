@@ -37,6 +37,23 @@ dfreq = hdul[0].header['CDELT3']
 freq = np.linspace(freq0, freq0 + dfreq * (nfreq - freq0i), nfreq) # Hz
 print(freq[0]*1.0e-6, freq[-1]*1.0e-6) # Mhz
 
+# # read in station beam
+# beam_name = '/home/s1_tianlai/SKA/SDC3/station_beam.fits'
+
+# hdul = fits.open(beam_name)
+# print(hdul.info())
+# # print(hdul[0].header)
+# beam = hdul[0].data
+# print(beam.shape, beam.dtype)
+# nfreq, bx, by = beam.shape
+# beam = beam[:, bx//2-N:bx//2+N, by//2-N:by//2+N]
+# # beams = [ beam[fi_bins[i]:fi_bins[i+1]] for i in range(nfb) ]
+
+# # correct for common station beam (the lowest freq beam)
+# # data = data/beam[0:1, :, :]
+# # data = data/beam[600:601, :, :]
+
+
 # Convert the image data from Jy/beam to K
 # the beam
 beam = Beam.from_fits_header(fits.getheader(img_name))
@@ -99,7 +116,10 @@ for fbi in range(nfb):
 
 
     R = Rs[fbi].transpose(1, 2, 0)
-    ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True)
+    window = None
+    # window = 'blackmanharris'
+    # window = 'tukey'
+    ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True, window=window)
 
     # save ps to file
     fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz_{freq_bins[fbi][1]}MHz.data'
