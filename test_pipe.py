@@ -1,10 +1,8 @@
 import numpy as np
-from scipy import linalg as la
-from tlpipe.core import constants as const
 import h5py
 from astropy.io import fits
 from astropy import units as u
-from astropy import constants as const
+# from astropy import constants as const
 from astropy.cosmology import FlatLambdaCDM
 from radio_beam import Beam
 from power_spectrum import power_spectrum_2d
@@ -51,24 +49,13 @@ data = image_data_K.value
 # data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
 
 
-# # foreground subtraction
-# # PCA method
-# D = data.reshape(nfreq, -1)
-# C = np.dot(D, D.T) / (nra * ndec)
-# e, U = la.eigh(C)
-
-# # 30 modes
-# nmode = 30
-# s = np.zeros_like(e)
-# s[-nmode:] = 1.0
-# F = np.dot(np.dot(U*s, U.T), D)
-# F = F.reshape((nfreq, nra, ndec))
-# R = data - F # residual 21 cm signal + noise
-# R = R.reshape((nfreq, nra, ndec))
-
-
 # no foreground in TestDataset
 R = data
+
+# # save R to file for test
+# with h5py.File('test_R.hdf5', 'w') as f:
+#     f.create_dataset('R', data=R)
+# exit()
 
 
 # unit conversion
