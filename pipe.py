@@ -6,7 +6,8 @@ from astropy import units as u
 from astropy.cosmology import FlatLambdaCDM
 from radio_beam import Beam
 from pca_sub import pca
-from osvd_sub import osvd
+# from osvd_sub import osvd
+from osvd_sub_multiprocessing import osvd
 from power_spectrum import power_spectrum_2d
 
 import matplotlib
@@ -72,7 +73,7 @@ beams = [ beam[fi_bins[i]:fi_bins[i+1]] for i in range(nfb) ]
 # datas = [ data/beam for (data, beam) in zip(datas, beams) ]
 
 # correct for common station beam (the lowest freq beam)
-# datas = [ data/beam[0:1, :, :] for (data, beam) in zip(datas, beams) ]
+datas = [ data/beam[0:1, :, :] for (data, beam) in zip(datas, beams) ]
 
 # Cosmology model for unit conversion
 # convert (MHz, deg, deg) to comoving (Mpc, Mpc, Mpc)
@@ -93,47 +94,48 @@ for (fbi, data, freq) in list(zip(np.arange(nfb), datas, freqs))[4:5]:
     data = image_data_K.value
 
     # subtract mean of data
-    data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
+    # data -= np.mean(data, axis=(1, 2))[:, np.newaxis, np.newaxis]
 
 
     # foreground subtraction
-    # PCA method
-    # 30 modes
-    nmode = 30
-    R = pca(data, nmode)
+    # # PCA method
+    # # 30 modes
+    # nmode = 30
+    # R = pca(data, nmode)
+    # print(R.min(), R.max())
+
+    # OSVD method
+    # 5750 modes
+    nmode = 5750
+    R = osvd(data, nmode)
     print(R.min(), R.max())
 
-    # # OSVD method
-    # # 15000 modes
-    # nmode = 15000
-    # R = osvd(data, nmode)
-    # print(R.min(), R.max())
 
     # with h5py.File('test_R.hdf5', 'r') as f:
     #     R = f['R'][:]
 
-    # plot data slices
-    plt.figure(figsize=(13, 5))
-    plt.subplot(121)
-    plt.imshow(R[0], origin='lower', aspect='equal')
-    plt.colorbar()
-    plt.subplot(122)
-    plt.imshow(R[-1], origin='lower', aspect='equal')
-    plt.colorbar()
-    # plt.savefig(f'image_slice_fbi{fbi}_OSVD_{nmode}modes_no_beam_correction.png')
-    plt.savefig(f'image_slice_fbi{fbi}_PCA_{nmode}modes_no_beam_correction.png')
-    plt.close()
+    # # plot data slices
+    # plt.figure(figsize=(13, 5))
+    # plt.subplot(121)
+    # plt.imshow(R[0], origin='lower', aspect='equal')
+    # plt.colorbar()
+    # plt.subplot(122)
+    # plt.imshow(R[-1], origin='lower', aspect='equal')
+    # plt.colorbar()
+    # # plt.savefig(f'image_slice_fbi{fbi}_OSVD_{nmode}modes_no_beam_correction.png')
+    # plt.savefig(f'image_slice_fbi{fbi}_PCA_{nmode}modes_no_beam_correction.png')
+    # plt.close()
 
-    plt.figure(figsize=(13, 5))
-    plt.subplot(121)
-    plt.imshow(R[0]/beams[fbi][0, :, :], origin='lower', aspect='equal')
-    plt.colorbar()
-    plt.subplot(122)
-    plt.imshow(R[-1]/beams[fbi][-1, :, :], origin='lower', aspect='equal')
-    plt.colorbar()
-    # plt.savefig(f'image_slice_fbi{fbi}_OSVD_{nmode}modes_beam_correction.png')
-    plt.savefig(f'image_slice_fbi{fbi}_PCA_{nmode}modes_beam_correction.png')
-    plt.close()
+    # plt.figure(figsize=(13, 5))
+    # plt.subplot(121)
+    # plt.imshow(R[0]/beams[fbi][0, :, :], origin='lower', aspect='equal')
+    # plt.colorbar()
+    # plt.subplot(122)
+    # plt.imshow(R[-1]/beams[fbi][-1, :, :], origin='lower', aspect='equal')
+    # plt.colorbar()
+    # # plt.savefig(f'image_slice_fbi{fbi}_OSVD_{nmode}modes_beam_correction.png')
+    # plt.savefig(f'image_slice_fbi{fbi}_PCA_{nmode}modes_beam_correction.png')
+    # plt.close()
 
 
 
@@ -150,7 +152,10 @@ for (fbi, data, freq) in list(zip(np.arange(nfb), datas, freqs))[4:5]:
 
 
     R = R.transpose(1, 2, 0)
-    ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True)
+    # window = None
+    window = 'blackmanharris'
+    # window = 'tukey'
+    ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True, window=window)
 
     # save ps to file
     fl = f'Tianlai_{freq_bins[fbi][0]}MHz_{freq_bins[fbi][1]}MHz.data'
