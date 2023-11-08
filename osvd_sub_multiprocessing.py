@@ -54,35 +54,17 @@ def osvd(data, nmode=20000):
     nx, ny, nf = data.shape
     U, S, V, U3 = osvd_decomp(data)
 
-    # # save osvd result
-    # import h5py
-    # with h5py.File('msw_image_osvd_decomp_ZW3_c4deg_fbi4.hdf5', 'w') as f:
-    #     f.create_dataset('U', data=U)
-    #     f.create_dataset('S', data=S)
-    #     f.create_dataset('V', data=V)
-    #     f.create_dataset('U3', data=U3)
-
-    # # read in data
-    # import h5py
-    # with h5py.File('msw_image_osvd_decomp_ZW3_c4deg_fbi4.hdf5', 'r') as f:
-    #     U = f['U'][:]
-    #     S = f['S'][:]
-    #     V = f['V'][:]
-    #     U3 = f['U3'][:]
-
-
     s = np.sort(S, axis=None)
-    th = s[-nmode]
+    if nmode > 0:
+        th = s[-nmode]
+    else:
+        # find 95% threshold
+        ss = np.sum(s)
+        cs = np.cumsum(s[::-1])
+        ind = np.where(cs/ss>0.95)[0][0]
+        print(f'95% ind: {ind}')
+        th = s[-ind]
     S[S>th] = 0.0
-
-    # # plot s
-    # import matplotlib
-    # matplotlib.use('Agg')
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.semilogy(s[s>0][::-1][:50000], 'ro')
-    # plt.savefig('osvd_eigvals_50000.png')
-    # plt.close()
 
     # Create a pool of worker processes
     pool = multiprocessing.Pool(10)

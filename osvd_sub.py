@@ -35,16 +35,6 @@ def osvd(data, nmode=20000):
     th = s[-nmode]
     S[S>th] = 0.0
 
-    # # plot s
-    # import matplotlib
-    # matplotlib.use('Agg')
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.semilogy(s[s>0][::-1], 'ro')
-    # plt.savefig('osvd_eigvals.png')
-    # plt.close()
-    # exit()
-
     R = np.zeros_like(data)
     for k in range(nf):
         R[:, :, k] = U[:, :, k] @ S[:, :, k] @ V[:, :, k]

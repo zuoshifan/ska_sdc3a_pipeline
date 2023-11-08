@@ -69,12 +69,6 @@ data = image_data_K.value
 # no foreground in TestDataset
 R = data
 
-# # save R to file for test
-# with h5py.File('test_R.hdf5', 'w') as f:
-#     f.create_dataset('R', data=R)
-# exit()
-
-
 # unit conversion
 # convert (MHz, deg, deg) to comoving (Mpc, Mpc, Mpc)
 H0 = 100.0 # Hubble constant at z = 0, [km/sec/Mpc]
@@ -122,9 +116,9 @@ for fbi in range(nfb):
     ps, err, kper_mid, kpar_mid, n_modes = power_spectrum_2d(R, kbins=[kper, kpar], binning=None, box_dims=[rx.value, ry.value, rz.value], return_modes=True, window=window)
 
     # save ps to file
-    fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz_{freq_bins[fbi][1]}MHz.data'
+    fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz-{freq_bins[fbi][1]}MHz.data'
     np.savetxt(fl, ps.T, fmt='%.12f') # Note: transpose to make each row is of constant k_parallel
 
     # save 1sigma error to file
-    fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz_{freq_bins[fbi][1]}MHz_errors.data'
+    fl = f'TianlaiTest_{freq_bins[fbi][0]}MHz-{freq_bins[fbi][1]}MHz_errors.data'
     np.savetxt(fl, err, fmt='%.12f')

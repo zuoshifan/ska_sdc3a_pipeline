@@ -4,8 +4,8 @@ import numpy as np
 
 
 true_pk2d = np.loadtxt('/home/s1_tianlai/kfyu/SDC3/TestDataset/TestDatasetTRUTH_166MHz-181MHz.data')
-test_pk2d = np.loadtxt('./TianlaiTest_166MHz_181MHz.data')
-test_err = np.loadtxt('./TianlaiTest_166MHz_181MHz_errors.data')
+test_pk2d = np.loadtxt('./TianlaiTest_166MHz-181MHz.data')
+test_err = np.loadtxt('./TianlaiTest_166MHz-181MHz_errors.data')
 
 
 def log_prob(pk_true, pk_estimate, pk_error):
