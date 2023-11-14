@@ -1,3 +1,4 @@
+import configparser
 import numpy as np
 from scipy import linalg as la
 import h5py
@@ -15,8 +16,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 # read in image data
-img_name = '/home/s1_tianlai/SKA/SDC3/ZW3.msw_image.fits'
+img_name = config['DEFAULT']['img_file']
 
 hdul = fits.open(img_name)
 print(hdul.info())
@@ -56,7 +60,7 @@ dkpar = kpar_mid[1] - kpar_mid[0]
 kpar = np.concatenate([[kpar_mid[0] - 0.5*dkpar], kpar_mid + 0.5*dkpar])
 
 # read in station beam
-beam_name = '/home/s1_tianlai/SKA/SDC3/station_beam.fits'
+beam_name = config['DEFAULT']['beam_file']
 
 hdul = fits.open(beam_name)
 print(hdul.info())

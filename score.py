@@ -1,11 +1,15 @@
 """Compute score of the estimated power spectrum, the higer score the better result."""
 
+import configparser
 import numpy as np
 
 
-true_pk2d = np.loadtxt('/home/s1_tianlai/kfyu/SDC3/TestDataset/TestDatasetTRUTH_166MHz-181MHz.data')
-test_pk2d = np.loadtxt('./TianlaiTest_166MHz-181MHz.data')
-test_err = np.loadtxt('./TianlaiTest_166MHz-181MHz_errors.data')
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+true_pk2d = np.loadtxt(config['DEFAULT']['true_pk2d_file'])
+test_pk2d = np.loadtxt(config['DEFAULT']['test_pk2d_file'])
+test_err = np.loadtxt(config['DEFAULT']['test_err_file'])
 
 
 def log_prob(pk_true, pk_estimate, pk_error):

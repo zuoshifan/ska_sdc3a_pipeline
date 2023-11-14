@@ -1,3 +1,4 @@
+import configparser
 import numpy as np
 import h5py
 from astropy.io import fits
@@ -12,8 +13,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 # read in image data
-img_name = '/home/s1_tianlai/kfyu/SDC3/TestDataset/TestDataset.msw_image.fits'
+img_name = config['DEFAULT']['test_img_file']
 
 hdul = fits.open(img_name)
 print(hdul.info())
@@ -38,7 +42,7 @@ freq = np.linspace(freq0, freq0 + dfreq * (nfreq - freq0i), nfreq) # Hz
 print(freq[0]*1.0e-6, freq[-1]*1.0e-6) # Mhz
 
 # # read in station beam
-# beam_name = '/home/s1_tianlai/SKA/SDC3/station_beam.fits'
+# beam_name = config['DEFAULT']['beam_file']
 
 # hdul = fits.open(beam_name)
 # print(hdul.info())

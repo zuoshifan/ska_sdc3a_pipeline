@@ -1,5 +1,17 @@
 Foreground subtraction and power spectrum computing pipeline for SKA SDC3a
 
+To run the pipeline, first create a 'config.ini' file in current dir:
+
+```
+[DEFAULT]
+img_file = /dir/to/SKA/SDC3/ZW3.msw_image.fits
+test_img_file = /dir/to/SKA/SDC3/TestDataset.msw_image.fits
+beam_file = /dir/to/SKA/SDC3/station_beam.fits
+true_pk2d_file = /dir/to/SKA/SDC3/TestDatasetTRUTH_166MHz-181MHz.data
+test_pk2d_file = ./TianlaiTest_166MHz-181MHz.data
+test_err_file = ./TianlaiTest_166MHz-181MHz_errors.data
+```
+
 Run the pipeline as follows:
 
     $ python pipe.py
