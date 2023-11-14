@@ -1,4 +1,6 @@
-Foreground subtraction and power spectrum computing pipeline for SKA SDC3a
+# Foreground subtraction and power spectrum computing pipeline for SKA SDC3a
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10124117.svg)](https://doi.org/10.5281/zenodo.10124117)
 
 To run the pipeline, first create a 'config.ini' file in current dir:
 
@@ -14,18 +16,19 @@ test_err_file = ./TianlaiTest_166MHz-181MHz_errors.data
 
 Run the pipeline as follows:
 
-    $ python pipe.py
+```
+> python pipe.py
+```
 
 Run pipeline for the Test Dataset as follows:
 
-    $ python test_pipe.py
+```
+> python test_pipe.py
+```
 
-TODO:
+# TODO:
 
 1. Try various foreground subtraction method;
-
 2. Check unit conversion;
-
 3. Power spectrum error estimation;
-
 4. PSF deconvolution.
